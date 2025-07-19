@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { google } from "@ai-sdk/google";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
+import { CUSTOMER_SERVICE_PROMPTS } from "./prompts.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ async function handleCustomerQuery(query) {
       type: z.enum(["general", "refund", "technical"]),
       complexity: z.enum(["simple", "complex"]),
     }),
+    system: CUSTOMER_SERVICE_PROMPTS.QUERY_CLASSIFIER,
     prompt: `Classify this customer query:
     ${query}
 
@@ -34,12 +36,9 @@ async function handleCustomerQuery(query) {
         ? google("gemini-2.5-flash")
         : google("gemini-2.5-pro"),
     system: {
-      general:
-        "You are an expert customer service agent handling general inquiries.",
-      refund:
-        "You are a customer service agent specializing in refund requests. Follow company policy and collect necessary information.",
-      technical:
-        "You are a technical support specialist with deep product knowledge. Focus on clear step-by-step troubleshooting.",
+      general: CUSTOMER_SERVICE_PROMPTS.GENERAL_SUPPORT,
+      refund: CUSTOMER_SERVICE_PROMPTS.REFUND_SPECIALIST,
+      technical: CUSTOMER_SERVICE_PROMPTS.TECHNICAL_SUPPORT,
     }[classification.type],
     prompt: query,
   });

@@ -7,12 +7,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start:evaluator": "node evaluatorOptimizer.js",
-    "start:sequential": "node sequentialProcessing.js",
-    "start:parallel": "node parallelProcessing.js",
-    "start:routing": "node routing.js",
-    "start:orchestrator": "node orchestratorWorker.js",
-    "start:all": "npm run start && npm run start:sequential && npm run start:parallel && npm run start:routing && npm run start:orchestrator",
+    "evaluator": "node evaluatorOptimizer.js",
+    "sequential": "node sequentialProcessing.js",
+    "parallel": "node parallelProcessing.js",
+    "routing": "node routing.js",
+    "orchestrator": "node orchestratorWorker.js",
+    "start:all": "npm run start && npm run sequential && npm run parallel && npm run routing && npm run orchestrator",
     "dev": "nodemon --watch './**/*.js' --exec 'node'",
     "clean": "rm -rf node_modules package-lock.json && npm install"
   },

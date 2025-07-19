@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { SOFTWARE_ARCHITECTURE_PROMPTS } from "./prompts.js";
 
 import dotenv from "dotenv";
 
@@ -20,8 +21,7 @@ async function implementFeature(featureRequest) {
       ),
       estimatedComplexity: z.enum(["low", "medium", "high"]),
     }),
-    system:
-      "You are a senior software architect planning feature implementations.",
+    system: SOFTWARE_ARCHITECTURE_PROMPTS.SENIOR_ARCHITECT,
     prompt: `Analyze this feature request and create an implementation plan:
     ${featureRequest}`,
   });
@@ -31,12 +31,9 @@ async function implementFeature(featureRequest) {
     implementationPlan.files.map(async (file) => {
       // Each worker is specialized for the type of change
       const workerSystemPrompt = {
-        create:
-          "You are an expert at implementing new files following best practices and project patterns.",
-        modify:
-          "You are an expert at modifying existing code while maintaining consistency and avoiding regressions.",
-        delete:
-          "You are an expert at safely removing code while ensuring no breaking changes.",
+        create: SOFTWARE_ARCHITECTURE_PROMPTS.IMPLEMENTATION_SPECIALIST,
+        modify: SOFTWARE_ARCHITECTURE_PROMPTS.MODIFICATION_SPECIALIST,
+        delete: SOFTWARE_ARCHITECTURE_PROMPTS.DELETION_SPECIALIST,
       }[file.changeType];
 
       const { object: change } = await generateObject({
@@ -92,8 +89,8 @@ Technical Constraints:
     console.log(
       `\n${index + 1}. ${change.file.filePath} (${change.file.changeType}):`
     );
-    console.log(`   Purpose: ${change.file.purpose}`);
-    console.log(`   Explanation: ${change.implementation.explanation}`);
-    console.log(`   Code Changes:\n${change.implementation.code}`);
+    console.log(`Purpose: ${change.file.purpose}`);
+    console.log(`Explanation: ${change.implementation.explanation}`);
+    console.log(`Code Changes:\n${change.implementation.code}`);
   });
 })();

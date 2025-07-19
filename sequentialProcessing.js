@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { google } from "@ai-sdk/google";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+import { MARKETING_PROMPTS } from "./prompts.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ async function generateMarketingCopy(input) {
   // First step: Generate marketing copy
   const { text: copy } = await generateText({
     model,
+    system: MARKETING_PROMPTS.CREATIVE_COPYWRITER,
     prompt: `Write persuasive marketing copy for: ${input}. Focus on benefits and emotional appeal.`,
   });
 
@@ -23,6 +25,7 @@ async function generateMarketingCopy(input) {
       emotionalAppeal: z.number().min(1).max(10),
       clarity: z.number().min(1).max(10),
     }),
+    system: MARKETING_PROMPTS.COPY_EVALUATOR,
     prompt: `Evaluate this marketing copy for:
     1. Presence of call to action (true/false)
     2. Emotional appeal (1-10)
@@ -39,6 +42,7 @@ async function generateMarketingCopy(input) {
   ) {
     const { text: improvedCopy } = await generateText({
       model,
+      system: MARKETING_PROMPTS.COPY_OPTIMIZER,
       prompt: `Rewrite this marketing copy with:
       ${!qualityMetrics.hasCallToAction ? "- A clear call to action" : ""}
       ${qualityMetrics.emotionalAppeal < 7 ? "- Stronger emotional appeal" : ""}

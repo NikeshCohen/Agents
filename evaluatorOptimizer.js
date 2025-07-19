@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { google } from "@ai-sdk/google";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+import { TRANSLATION_PROMPTS } from "./prompts.js";
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ async function translateWithFeedback(text, targetLanguage) {
   // Initial translation
   const { text: translation } = await generateText({
     model: google("gemini-2.5-flash"), // use small model for first attempt
-    system: "You are an expert literary translator.",
+    system: TRANSLATION_PROMPTS.LITERARY_TRANSLATOR,
     prompt: `Translate this text to ${targetLanguage}, preserving tone and cultural nuances:
     ${text}`,
   });
@@ -34,7 +35,7 @@ async function translateWithFeedback(text, targetLanguage) {
         specificIssues: z.array(z.string()),
         improvementSuggestions: z.array(z.string()),
       }),
-      system: "You are an expert in evaluating literary translations.",
+      system: TRANSLATION_PROMPTS.TRANSLATION_EVALUATOR,
       prompt: `Evaluate this translation:
 
       Original: ${text}
@@ -60,7 +61,7 @@ async function translateWithFeedback(text, targetLanguage) {
     // Generate improved translation based on feedback
     const { text: improvedTranslation } = await generateText({
       model: google("gemini-2.5-pro"), // use a larger model
-      system: "You are an expert literary translator.",
+      system: TRANSLATION_PROMPTS.TRANSLATION_REFINER,
       prompt: `Improve this translation based on the following feedback:
       ${evaluation.specificIssues.join("\n")}
       ${evaluation.improvementSuggestions.join("\n")}

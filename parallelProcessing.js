@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { google } from "@ai-sdk/google";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+import { CODE_REVIEW_PROMPTS } from "./prompts.js";
 
 dotenv.config();
 
@@ -15,8 +16,7 @@ async function parallelCodeReview(code) {
     await Promise.all([
       generateObject({
         model,
-        system:
-          "You are an expert in code security. Focus on identifying security vulnerabilities, injection risks, and authentication issues.",
+        system: CODE_REVIEW_PROMPTS.SECURITY_REVIEWER,
         schema: z.object({
           vulnerabilities: z.array(z.string()),
           riskLevel: z.enum(["low", "medium", "high"]),
@@ -28,8 +28,7 @@ async function parallelCodeReview(code) {
 
       generateObject({
         model,
-        system:
-          "You are an expert in code performance. Focus on identifying performance bottlenecks, memory leaks, and optimization opportunities.",
+        system: CODE_REVIEW_PROMPTS.PERFORMANCE_REVIEWER,
         schema: z.object({
           issues: z.array(z.string()),
           impact: z.enum(["low", "medium", "high"]),
@@ -41,8 +40,7 @@ async function parallelCodeReview(code) {
 
       generateObject({
         model,
-        system:
-          "You are an expert in code quality. Focus on code structure, readability, and adherence to best practices.",
+        system: CODE_REVIEW_PROMPTS.MAINTAINABILITY_REVIEWER,
         schema: z.object({
           concerns: z.array(z.string()),
           qualityScore: z.number().min(1).max(10),
@@ -62,7 +60,7 @@ async function parallelCodeReview(code) {
   // Aggregate results using another model instance
   const { text: summary } = await generateText({
     model,
-    system: "You are a technical lead summarizing multiple code reviews.",
+    system: CODE_REVIEW_PROMPTS.TECHNICAL_LEAD_SYNTHESIZER,
     prompt: `Synthesize these code review results into a concise summary with key actions:
     ${JSON.stringify(reviews, null, 2)}`,
   });
