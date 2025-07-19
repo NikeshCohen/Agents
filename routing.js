@@ -1,0 +1,60 @@
+import { google } from "@ai-sdk/google";
+import { generateObject, generateText } from "ai";
+import { z } from "zod";
+
+async function handleCustomerQuery(query) {
+  const model = google("gemini-2.5-flash");
+
+  // First step: Classify the query type
+  const { object: classification } = await generateObject({
+    model,
+    schema: z.object({
+      reasoning: z.string(),
+      type: z.enum(["general", "refund", "technical"]),
+      complexity: z.enum(["simple", "complex"]),
+    }),
+    prompt: `Classify this customer query:
+    ${query}
+
+    Determine:
+    1. Query type (general, refund, or technical)
+    2. Complexity (simple or complex)
+    3. Brief reasoning for classification`,
+  });
+
+  // Route based on classification
+  // Set model and system prompt based on query type and complexity
+  const { text: response } = await generateText({
+    model:
+      classification.complexity === "simple"
+        ? google("gemini-2.5-flash")
+        : google("gemini-2.5-pro"),
+    system: {
+      general:
+        "You are an expert customer service agent handling general inquiries.",
+      refund:
+        "You are a customer service agent specializing in refund requests. Follow company policy and collect necessary information.",
+      technical:
+        "You are a technical support specialist with deep product knowledge. Focus on clear step-by-step troubleshooting.",
+    }[classification.type],
+    prompt: query,
+  });
+
+  return { response, classification };
+}
+
+(async () => {
+  const testQueries = [
+    "I've been trying to connect my EcoCharge Pro to my phone for the past hour but it's not showing up in the Bluetooth devices list. I've already tried restarting both devices and checking if Bluetooth is enabled. Can you help me troubleshoot this issue?",
+    "I received my order yesterday but the charging pad isn't working as advertised. I'd like to return it and get a refund. Order #EC-2024-03-15-789",
+    "Hi, I'm interested in buying the EcoCharge Pro. Does it work with iPhone 15 Pro Max? Also, what's the warranty period?",
+  ];
+
+  for (const query of testQueries) {
+    console.log("\n--- New Query ---");
+    console.log("Query:", query);
+    const { response, classification } = await handleCustomerQuery(query);
+    console.log("Classification:", classification);
+    console.log("Response:", response);
+  }
+})();

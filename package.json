@@ -1,0 +1,27 @@
+{
+  "name": "agents",
+  "version": "1.0.0",
+  "description": "A collection of AI agents built with vercels ai SDK v5",
+  "license": "ISC",
+  "author": "Nikesh Cohen",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start:evaluator": "node evaluatorOptimizer.js",
+    "start:sequential": "node sequentialProcessing.js",
+    "start:parallel": "node parallelProcessing.js",
+    "start:routing": "node routing.js",
+    "start:orchestrator": "node orchestratorWorker.js",
+    "start:all": "npm run start && npm run start:sequential && npm run start:parallel && npm run start:routing && npm run start:orchestrator",
+    "dev": "nodemon --watch './**/*.js' --exec 'node'",
+    "clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "ai": "^4.3.19",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
