@@ -1,6 +1,10 @@
+import dotenv from "dotenv";
+
 import { google } from "@ai-sdk/google";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+
+dotenv.config();
 
 // Example: Parallel code review with multiple specialized reviewers
 async function parallelCodeReview(code) {

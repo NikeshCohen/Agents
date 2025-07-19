@@ -1,6 +1,10 @@
+import dotenv from "dotenv";
+
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
+
+import dotenv from "dotenv";
 
 async function implementFeature(featureRequest) {
   // Orchestrator: Plan the implementation

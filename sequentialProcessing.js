@@ -1,6 +1,10 @@
+import dotenv from "dotenv";
+
 import { google } from "@ai-sdk/google";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+
+dotenv.config();
 
 async function generateMarketingCopy(input) {
   const model = google("gemini-2.5-flash");
