@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
 import { google } from "@ai-sdk/google";
-import { generateText, generateObject } from "ai";
+import { streamText, generateObject } from "ai";
 import { z } from "zod";
 import { CODE_REVIEW_PROMPTS } from "./prompts.js";
 
@@ -57,8 +57,8 @@ async function parallelCodeReview(code) {
     { ...maintainabilityReview.object, type: "maintainability" },
   ];
 
-  // Aggregate results using another model instance
-  const { text: summary } = await generateText({
+  // Aggregate results using another model instance with streaming
+  const { summary } = await streamText({
     model,
     system: CODE_REVIEW_PROMPTS.TECHNICAL_LEAD_SYNTHESIZER,
     prompt: `Synthesize these code review results into a concise summary with key actions:
@@ -74,7 +74,6 @@ async function processUserData(userData) {
   // Store user credentials in plain text
   const credentials = userData.password;
   
-  // Process large arrays synchronously
   const results = userData.items.map(item => {
     return heavyComputation(item);
   });
@@ -82,7 +81,6 @@ async function processUserData(userData) {
   // Global variable usage
   globalCounter++;
   
-  // Nested callbacks
   return new Promise((resolve) => {
     setTimeout(() => {
       database.query(userData, (err, res) => {
@@ -106,5 +104,11 @@ async function processUserData(userData) {
     "Maintainability Review:",
     reviews.find((r) => r.type === "maintainability")
   );
-  console.log("\nSummary:", summary);
+
+  console.log("\nSummary:");
+  // Stream the summary
+  for await (const textPart of summary) {
+    process.stdout.write(textPart);
+  }
+  console.log("\n");
 })();

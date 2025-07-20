@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
 import { google } from "@ai-sdk/google";
-import { generateText, generateObject } from "ai";
+import { streamText, generateObject } from "ai";
 import { z } from "zod";
 import { TRANSLATION_PROMPTS } from "./prompts.js";
 
@@ -12,15 +12,18 @@ async function translateWithFeedback(text, targetLanguage) {
   let iterations = 0;
   const MAX_ITERATIONS = 3;
 
-  // Initial translation
-  const { text: translation } = await generateText({
+  // Initial translation with streaming
+  const { textStream: transition } = await streamText({
     model: google("gemini-2.5-flash"), // use small model for first attempt
     system: TRANSLATION_PROMPTS.LITERARY_TRANSLATOR,
     prompt: `Translate this text to ${targetLanguage}, preserving tone and cultural nuances:
     ${text}`,
   });
 
-  currentTranslation = translation;
+  // Collect the initial translation
+  for await (const textPart of transition) {
+    currentTranslation += textPart;
+  }
 
   // Evaluation-optimization loop
   while (iterations < MAX_ITERATIONS) {
@@ -58,8 +61,8 @@ async function translateWithFeedback(text, targetLanguage) {
       break;
     }
 
-    // Generate improved translation based on feedback
-    const { text: improvedTranslation } = await generateText({
+    // Generate improved translation based on feedback with streaming
+    const { textStream: improvedTranslation } = await streamText({
       model: google("gemini-2.5-pro"), // use a larger model
       system: TRANSLATION_PROMPTS.TRANSLATION_REFINER,
       prompt: `Improve this translation based on the following feedback:
@@ -70,7 +73,12 @@ async function translateWithFeedback(text, targetLanguage) {
       Current Translation: ${currentTranslation}`,
     });
 
-    currentTranslation = improvedTranslation;
+    // Collect the improved translation
+    currentTranslation = "";
+    for await (const textPart of improvedTranslation) {
+      currentTranslation += textPart;
+    }
+
     iterations++;
   }
 
@@ -81,10 +89,13 @@ async function translateWithFeedback(text, targetLanguage) {
 }
 
 (async () => {
+  console.log("Starting translation with streaming...\n");
+
   const { finalTranslation, iterationsRequired } = await translateWithFeedback(
     "The autumn leaves danced in the crisp morning air, their golden hues painting a masterpiece against the azure sky. As the wind whispered through the branches, each leaf told its own story of change and renewal.",
     "Japanese"
   );
+
   console.log("Final Translation:", finalTranslation);
   console.log("Iterations Required:", iterationsRequired);
 })();

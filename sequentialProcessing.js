@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
 import { google } from "@ai-sdk/google";
-import { generateText, generateObject } from "ai";
+import { streamText, generateObject } from "ai";
 import { z } from "zod";
 import { MARKETING_PROMPTS } from "./prompts.js";
 
@@ -10,12 +10,18 @@ dotenv.config();
 async function generateMarketingCopy(input) {
   const model = google("gemini-2.5-flash");
 
-  // First step: Generate marketing copy
-  const { text: copy } = await generateText({
+  // First step: Generate marketing copy with streaming
+  const { textStream: copyStream } = await streamText({
     model,
     system: MARKETING_PROMPTS.CREATIVE_COPYWRITER,
     prompt: `Write persuasive marketing copy for: ${input}. Focus on benefits and emotional appeal.`,
   });
+
+  // Collect the streamed copy
+  let copy = "";
+  for await (const textPart of copyStream) {
+    copy += textPart;
+  }
 
   // Perform quality check on copy
   const { object: qualityMetrics } = await generateObject({
@@ -40,7 +46,9 @@ async function generateMarketingCopy(input) {
     qualityMetrics.emotionalAppeal < 7 ||
     qualityMetrics.clarity < 7
   ) {
-    const { text: improvedCopy } = await generateText({
+    console.log("Quality check failed, regenerating copy.", qualityMetrics);
+
+    const { textStream: improvedCopyStream } = await streamText({
       model,
       system: MARKETING_PROMPTS.COPY_OPTIMIZER,
       prompt: `Rewrite this marketing copy with:
@@ -50,16 +58,29 @@ async function generateMarketingCopy(input) {
 
       Original copy: ${copy}`,
     });
-    return { copy: improvedCopy, qualityMetrics };
+    return { copyStream: improvedCopyStream, qualityMetrics };
   }
 
   return { copy, qualityMetrics };
 }
 
 (async () => {
-  const { copy, qualityMetrics } = await generateMarketingCopy(
+  const result = await generateMarketingCopy(
     "EcoCharge Pro - Our revolutionary new solar-powered portable charger that keeps your devices powered for up to 7 days. Features dual USB-C ports, wireless charging pad, and weatherproof design. Perfect for outdoor adventures and emergency preparedness."
   );
-  console.log("Generated Copy:", copy);
-  console.log("Quality Metrics:", JSON.stringify(qualityMetrics, null, 2));
+
+  if (result.copyStream) {
+    console.log("Generated Copy (Improved):");
+    for await (const textPart of result.copyStream) {
+      process.stdout.write(textPart);
+    }
+    console.log("\n");
+  } else {
+    console.log("Generated Copy:", result.copy);
+  }
+
+  console.log(
+    "Quality Metrics:",
+    JSON.stringify(result.qualityMetrics, null, 2)
+  );
 })();

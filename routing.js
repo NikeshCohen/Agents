@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
 import { google } from "@ai-sdk/google";
-import { generateObject, generateText } from "ai";
+import { generateObject, streamText } from "ai";
 import { z } from "zod";
 import { CUSTOMER_SERVICE_PROMPTS } from "./prompts.js";
 
@@ -30,7 +30,7 @@ async function handleCustomerQuery(query) {
 
   // Route based on classification
   // Set model and system prompt based on query type and complexity
-  const { text: response } = await generateText({
+  const { textStream } = await streamText({
     model:
       classification.complexity === "simple"
         ? google("gemini-2.5-flash")
@@ -43,7 +43,7 @@ async function handleCustomerQuery(query) {
     prompt: query,
   });
 
-  return { response, classification };
+  return { textStream, classification };
 }
 
 (async () => {
@@ -56,8 +56,14 @@ async function handleCustomerQuery(query) {
   for (const query of testQueries) {
     console.log("\n--- New Query ---");
     console.log("Query:", query);
-    const { response, classification } = await handleCustomerQuery(query);
+    const { textStream, classification } = await handleCustomerQuery(query);
     console.log("Classification:", classification);
-    console.log("Response:", response);
+    console.log("Response:");
+
+    // Stream the response
+    for await (const textPart of textStream) {
+      process.stdout.write(textPart);
+    }
+    console.log("\n"); // Add newline after streaming completes
   }
 })();
